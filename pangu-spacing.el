@@ -6,6 +6,7 @@
 ;; Kyewords: converience
 ;; Version: 0.4
 ;; X-URL: http://github.com/coldnew/pangu-spacing
+;; Package-Requires: ((emacs "24.1"))
 
 ;; This file is free software: you can redistribute it and/or modify
 ;; it under the terms of the GNU General Public License as published by
@@ -137,28 +138,10 @@
 
 ;;;; Custom Variables
 
-(defcustom pangu-spacing-separator " "
-  "String to be display between Chinese and English."
+(defcustom pangu-disabled-modes '(eshell-mode shell-mode term-mode)
+  "List of major modes where `pangu-mode' should not be active."
   :group 'pangu-spacing
-  :type 'string
-  :initialize 'custom-initialize-default)
-
-(defcustom pangu-spacing-real-insert-separator nil
-  "Set t or nil to make space show only on overlay or insert in file.
-When you set t here, the space will be insert when you save file."
-  :group 'pangu-spacing
-  :type 'boolean)
-
-(defface pangu-spacing-separator-face nil
-  "Face for pangu-spacing-mode separator."
-  :group 'pangu-spacing)
-
-(defcustom pangu-spacing-inhibit-mode-alist '(eshell-mode shell-mode term-mode)
-  "Inhibit mode alist for pangu-spacing-mode."
-  :group 'pangu-spacing
-  :type 'list)
-
-;;;; Local variables
+  :type '(repeat symbol))
 
 ;; NOTE:
 ;; We use `chinse-two-byte' instead of `chinese-two-byte', since there
@@ -197,20 +180,22 @@ is needed.")
 
 ;;;; Functions
 
+(declare-function org-element-at-point "org-element")
+(declare-function org-element-type "org-element")
+(declare-function org-element-context "org-element")
 (defun pangu-spacing-org-mode-at-special-region ()
-  (interactive)
+  "Return whether we should skip this match."
   (let ((element (org-element-at-point)))
-    (when (or (member (org-element-type element)
-                      '(src-block keyword example-block export-block
-                                  latex-environment planning))
-              (member (car (org-element-context element))
-                      '(inline-src-block timestamp link code verbatim)))
-      t)))
+    (or (member (org-element-type element)
+                '(src-block keyword example-block export-block
+                            latex-environment planning
+                            keyword))
+        (member (car (org-element-context element))
+                '(inline-src-block timestamp link code verbatim)))))
 
-(defcustom pangu-spacing-special-region-func-alist
+(defvar pangu-skip-match-function-alist
   '((org-mode . pangu-spacing-org-mode-at-special-region))
-  "Alist mapping major-mode to the corresponding function to
-  check for special region that shall not write real pangu-space"
+  "Alist mapping major modes to functions that determine whether a match should be skipped."
   :group 'pangu-spacing
   :type '(alist :key-type (symbol)
                 :value-type (function)))
@@ -219,10 +204,11 @@ is needed.")
   "Apply pangu spacing on BUF.
 
 BUF defaults to the current buffer."
-  (let ((at-special-region-func (cdr (assq major-mode pangu-spacing-special-region-func-alist))))
+  (let ((at-special-region-func (cdr (assq major-mode
+                                           pangu-skip-match-function-alist))))
     (save-excursion
       (goto-char (point-min))
-      (while (re-search-forward pangu-spacing-include-regexp (point-max) t)
+      (while (re-search-forward pangu-spacing-include-regexp nil t)
         (when (and (match-beginning 1)
                    (match-beginning 2))
           (unless (and at-special-region-func
@@ -230,6 +216,13 @@ BUF defaults to the current buffer."
             ;; This is where we add the space
             (replace-match "\\1 \\2" nil nil))
           (backward-char))))))
+
+(defun pangu-region (start end)
+  "Apply pangu between START and END in the current buffer."
+  (interactive "r")
+  (save-restriction
+    (narrow-to-region start end)
+    (pangu-buffer)))
 
 (defun pangu (str)
   "Apply pangu spacing on STR."
@@ -239,27 +232,24 @@ BUF defaults to the current buffer."
     (buffer-string)))
 
 ;;;###autoload
-(define-minor-mode pangu-spacing-mode
-  "Toggle pangu-spacing-mode"
+(define-minor-mode pangu-mode
+  "WIP: Apply pangu on the current buffer on save."
   :group 'pangu-spacing
   :global nil
   :init-value nil
   :lighter " Ρ"
-  (unless (or (member major-mode pangu-spacing-inhibit-mode-alist)
-              (minibufferp (current-buffer)))
+  (unless (or (member major-mode pangu-disabled-modes)
+              (minibufferp))
     (save-restriction
       (widen)
-      (if pangu-spacing-mode
-          (add-hook 'before-save-hook #'pangu-spacing-modify-buffer nil t)
+      (if pangu-mode
+          (add-hook 'before-save-hook #'pangu-buffer nil t)
         (progn
-          (remove-hook 'before-save-hook #'pangu-spacing-modify-buffer t)
-          (pangu-spacing-delete-all-overlays)))))
-  pangu-spacing-mode)
+          (remove-hook 'before-save-hook #'pangu-buffer t)))))
+  pangu-mode)
 
-;;;###autoload
-(define-globalized-minor-mode global-pangu-spacing-mode
-  pangu-spacing-mode pangu-spacing-mode)
-
+;; (define-globalized-minor-mode global-pangu-mode
+;;   pangu-mode pangu-mode)
 
 (provide 'pangu-spacing)
 ;;; pangu-spacing.el ends here
