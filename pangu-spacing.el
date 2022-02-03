@@ -327,10 +327,10 @@ It will really insert separator, no matter what
       (if pangu-spacing-mode
           (progn
             (jit-lock-register 'turn-on-pangu-spacing)
-            (add-hook 'local-write-file-hooks 'pangu-spacing-modify-buffer))
+            (add-hook 'before-save-hook #'pangu-spacing-modify-buffer nil t)
         (progn
           (jit-lock-unregister 'turn-on-pangu-spacing)
-          (remove-hook 'local-write-file-hooks 'pangu-spacing-modify-buffer)
+          (remove-hook 'before-save-hook #'pangu-spacing-modify-buffer t)
           (pangu-spacing-delete-all-overlays)))))
   pangu-spacing-mode)
 
