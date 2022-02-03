@@ -301,9 +301,6 @@ pangu-sapce-mode."
   "Delete all pangu-spacing-overlays in BUFFER."
   (pangu-spacing-delete-overlay (point-min) (point-max)))
 
-(defun turn-on-pangu-spacing (beg end)
-  (pangu-spacing-check-overlay beg end))
-
 ;;;###autoload
 (defun pangu-spacing-space-current-buffer ()
   "Space current buffer.
@@ -326,10 +323,10 @@ It will really insert separator, no matter what
       (widen)
       (if pangu-spacing-mode
           (progn
-            (jit-lock-register 'turn-on-pangu-spacing)
+            (jit-lock-register #'pangu-spacing-check-overlay)
             (add-hook 'before-save-hook #'pangu-spacing-modify-buffer nil t)
         (progn
-          (jit-lock-unregister 'turn-on-pangu-spacing)
+          (jit-lock-unregister #'pangu-spacing-check-overlay)
           (remove-hook 'before-save-hook #'pangu-spacing-modify-buffer t)
           (pangu-spacing-delete-all-overlays)))))
   pangu-spacing-mode)
