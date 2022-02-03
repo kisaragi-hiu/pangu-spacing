@@ -195,10 +195,7 @@ is needed.")
 
 (defvar pangu-skip-match-function-alist
   '((org-mode . pangu-spacing-org-mode-at-special-region))
-  "Alist mapping major modes to functions that determine whether a match should be skipped."
-  :group 'pangu-spacing
-  :type '(alist :key-type (symbol)
-                :value-type (function)))
+  "Alist mapping major modes to functions that determine whether a match should be skipped.")
 
 (defun pangu-buffer (&optional buf)
   "Apply pangu spacing on BUF.
