@@ -115,7 +115,7 @@
 ;; pangu-spacing-mode do not really insert space between English and
 ;; Chinese by defaut, you should enable this option manually.
 ;;
-;;      (setq pangu-spacing-real-insert-separtor t)
+;;      (setq pangu-spacing-real-insert-separator t)
 ;;
 ;; After you enable this, space will be inserted before you save file.
 ;;
@@ -125,7 +125,7 @@
 ;;
 ;;      (add-hook 'org-mode-hook
 ;;                '(lambda ()
-;;                 (set (make-local-variable 'pangu-spacing-real-insert-separtor) t)))
+;;                 (set (make-local-variable 'pangu-spacing-real-insert-separator) t)))
 ;;
 
 ;;; Code:
@@ -143,7 +143,7 @@
   :type 'string
   :initialize 'custom-initialize-default)
 
-(defcustom pangu-spacing-real-insert-separtor nil
+(defcustom pangu-spacing-real-insert-separator nil
   "Set t or nil to make space show only on overlay or insert in file.
 When you set t here, the space will be insert when you save file."
   :group 'pangu-spacing
@@ -263,7 +263,7 @@ pangu-sapce-mode."
 
 (defun pangu-spacing-modify-buffer ()
   "Real insert separator between English words and Chinese charactors in buffer."
-  (when pangu-spacing-real-insert-separtor
+  (when pangu-spacing-real-insert-separator
     (pangu-spacing-search-and-replace "\\1 \\2"
                                       pangu-spacing-include-regexp))
   ;; nil must be returned to allow use in write file hooks
@@ -308,9 +308,9 @@ pangu-sapce-mode."
 (defun pangu-spacing-space-current-buffer ()
   "Space current buffer.
 It will really insert separator, no matter what
-`pangu-spacing-real-insert-separtor' is."
+`pangu-spacing-real-insert-separator' is."
   (interactive)
-  (let ((pangu-spacing-real-insert-separtor t))
+  (let ((pangu-spacing-real-insert-separator t))
     (pangu-spacing-modify-buffer)))
 
 ;;;###autoload

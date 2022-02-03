@@ -1,4 +1,4 @@
-<a href="https://github.com/coldnew/pangu-spacing.el"><img src="https://www.gnu.org/software/emacs/images/emacs.png" alt="Normalize Logo" width="80" height="80" align="right"></a> 
+<a href="https://github.com/coldnew/pangu-spacing.el"><img src="https://www.gnu.org/software/emacs/images/emacs.png" alt="Normalize Logo" width="80" height="80" align="right"></a>
 ## pangu-spacing.el
 *Minor-mode to add space between Chinese and English characters.*
 
@@ -102,7 +102,7 @@ In your .emacs
 pangu-spacing-mode do not really insert space between English and
 Chinese by defaut, you should enable this option manually.
 
-     (setq pangu-spacing-real-insert-separtor t)
+     (setq pangu-spacing-real-insert-separator t)
 
 After you enable this, space will be inserted before you save file.
 
@@ -112,7 +112,7 @@ this: (take org-mode as example)
 
      (add-hook 'org-mode-hook
                '(lambda ()
-                (set (make-local-variable 'pangu-spacing-real-insert-separtor) t)))
+                (set (make-local-variable 'pangu-spacing-real-insert-separator) t)))
 
 
 ### Function Documentation
@@ -165,7 +165,7 @@ Delete all pangu-spacing-overlays in BUFFER.
 
 Space current buffer.
 It will really insert separator, no matter what
-‘pangu-spacing-real-insert-separtor’ is.
+‘pangu-spacing-real-insert-separator’ is.
 
 -----
 <div style="padding-top:15px;color: #d0d0d0;">
