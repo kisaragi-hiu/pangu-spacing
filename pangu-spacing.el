@@ -225,9 +225,8 @@ BUF defaults to the current buffer."
       (while (re-search-forward pangu-spacing-include-regexp (point-max) t)
         (when (and (match-beginning 1)
                    (match-beginning 2))
-          (if at-special-region-func
-              (save-match-data
-                (funcall at-special-region-func))
+          (unless (and at-special-region-func
+                       (save-match-data (funcall at-special-region-func)))
             ;; This is where we add the space
             (replace-match "\\1 \\2" nil nil))
           (backward-char))))))
