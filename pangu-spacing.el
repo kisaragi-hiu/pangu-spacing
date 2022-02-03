@@ -169,7 +169,7 @@ When you set t here, the space will be insert when you save file."
 ;;
 ;; Url: http://lists.gnu.org/archive/html/emacs-diffs/2014-01/msg00049.html
 
-(defvar pangu-spacing-include-regexp
+(defconst pangu-spacing-include-regexp
   ;; we didn't add korean because korean-hangul-two-byte is not implemented
   (rx (or (and (or (group-n 3 (any "。，！？；：「」（）、"))
                    (group-n 1 (or (category chinse-two-byte)
@@ -197,24 +197,6 @@ is needed.")
 
 ;;;; Functions
 
-(defmacro pangu-spacing-search-buffer (regexp start end func)
-  "Helper macro to search buffer and do func according regexp for
-pangu-spacing-mode."
-  `(let ((start ,start) (end ,end))
-     (save-excursion
-       (goto-char start)
-       (while (re-search-forward ,regexp end t)
-         (when (and (match-beginning 1)
-                    (match-beginning 2))
-           ,func
-           (backward-char))))))
-
-(defmacro pangu-spacing-search-overlay (beg end func regexp)
-  "Helper macro to search and update overlay according func and regexp for
-pangu-sapce-mode."
-  `(pangu-spacing-search-buffer ,regexp ,beg ,end
-                                  (,func (match-beginning 1) (match-end 1))))
-
 (defun pangu-spacing-org-mode-at-special-region ()
   (interactive)
   (let ((element (org-element-at-point)))
@@ -233,82 +215,29 @@ pangu-sapce-mode."
   :type '(alist :key-type (symbol)
                 :value-type (function)))
 
-(defun pangu-spacing-search-and-replace (match regexp)
-  "Replace regexp with match in buffer."
-  (let ((at-special-region-func
-         (cdr (assq major-mode pangu-spacing-special-region-func-alist))))
-    (pangu-spacing-search-buffer
-     regexp (point-min) (point-max)
-     (unless (and at-special-region-func
-                  (save-match-data (funcall at-special-region-func)))
-       (replace-match match nil nil)))))
+(defun pangu-buffer (&optional buf)
+  "Apply pangu spacing on BUF.
 
-(defun pangu-spacing-overlay-p (ov)
-  "Determine whether overlay OV was created by space-between."
-  (and (overlayp ov) (overlay-get ov 'pangu-spacing-overlay)))
+BUF defaults to the current buffer."
+  (let ((at-special-region-func (cdr (assq major-mode pangu-spacing-special-region-func-alist))))
+    (save-excursion
+      (goto-char (point-min))
+      (while (re-search-forward pangu-spacing-include-regexp (point-max) t)
+        (when (and (match-beginning 1)
+                   (match-beginning 2))
+          (if at-special-region-func
+              (save-match-data
+                (funcall at-special-region-func))
+            ;; This is where we add the space
+            (replace-match "\\1 \\2" nil nil))
+          (backward-char))))))
 
-
-(defun pangu-spacing-check-overlay (beg end)
-  "Insert a space between English words and Chinese charactors in overlay."
-  (setq beg (if beg
-                (max (- beg 1) (point-min))
-              (point-min))
-        end (or end (point-max)))
-  (pangu-spacing-delete-overlay beg end)
-  (setq end (min (1+ end) (point-max)))
-  (pangu-spacing-search-overlay beg end
-                                pangu-spacing-make-overlay
-                                pangu-spacing-include-regexp)
-  )
-
-(defun pangu-spacing-modify-buffer ()
-  "Real insert separator between English words and Chinese charactors in buffer."
-  (when pangu-spacing-real-insert-separator
-    (pangu-spacing-search-and-replace "\\1 \\2"
-                                      pangu-spacing-include-regexp))
-  ;; nil must be returned to allow use in write file hooks
-  nil)
-
-(defun pangu-spacing-region-has-pangu-spacing-overlays (beg end)
-  "Check if region specified by BEG and END has overlay.
-  Return t if it has at least one pangu-spacing overlay, nil if no overlay."
-  (let ((ov (overlays-in beg end))
-        (has-pangu-spacing-overlays nil))
-    (while (consp ov)
-      (when (pangu-spacing-overlay-p (car ov))
-        (setq has-pangu-spacing-overlays t
-              ;; break the while loop
-              ov nil))
-      (setq ov (cdr ov))
-      has-pangu-spacing-overlays)))
-
-(defun pangu-spacing-make-overlay (beg end)
-  "Allocate a pangu-spacing overlay in range."
-  (when (not (pangu-spacing-region-has-pangu-spacing-overlays beg end))
-    (let ((ov (make-overlay beg end nil t t))
-          (face 'pangu-spacing-separator-face))
-      (overlay-put ov 'pangu-spacing-overlay t)
-      (overlay-put ov 'after-string (propertize pangu-spacing-separator 'face face))
-      ov)))
-
-(defun pangu-spacing-delete-overlay (beg end)
-  "Delete all pangu-spacing-overlays in BUFFER."
-  (dolist (ov (overlays-in beg end))
-    (when (pangu-spacing-overlay-p ov)
-      (delete-overlay ov))))
-
-(defun pangu-spacing-delete-all-overlays (&optional beg end)
-  "Delete all pangu-spacing-overlays in BUFFER."
-  (pangu-spacing-delete-overlay (point-min) (point-max)))
-
-;;;###autoload
-(defun pangu-spacing-space-current-buffer ()
-  "Space current buffer.
-It will really insert separator, no matter what
-`pangu-spacing-real-insert-separator' is."
-  (interactive)
-  (let ((pangu-spacing-real-insert-separator t))
-    (pangu-spacing-modify-buffer)))
+(defun pangu (str)
+  "Apply pangu spacing on STR."
+  (with-temp-buffer
+    (insert str)
+    (pangu-buffer)
+    (buffer-string)))
 
 ;;;###autoload
 (define-minor-mode pangu-spacing-mode
@@ -322,11 +251,8 @@ It will really insert separator, no matter what
     (save-restriction
       (widen)
       (if pangu-spacing-mode
-          (progn
-            (jit-lock-register #'pangu-spacing-check-overlay)
-            (add-hook 'before-save-hook #'pangu-spacing-modify-buffer nil t)
+          (add-hook 'before-save-hook #'pangu-spacing-modify-buffer nil t)
         (progn
-          (jit-lock-unregister #'pangu-spacing-check-overlay)
           (remove-hook 'before-save-hook #'pangu-spacing-modify-buffer t)
           (pangu-spacing-delete-all-overlays)))))
   pangu-spacing-mode)

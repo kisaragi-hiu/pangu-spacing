@@ -1,3 +1,5 @@
+This is a fork that focuses on automatically adding spaces to files.
+
 <a href="https://github.com/coldnew/pangu-spacing.el"><img src="https://www.gnu.org/software/emacs/images/emacs.png" alt="Normalize Logo" width="80" height="80" align="right"></a>
 ## pangu-spacing.el
 *Minor-mode to add space between Chinese and English characters.*
